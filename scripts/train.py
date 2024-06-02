@@ -48,6 +48,13 @@ if __name__ == '__main__':
     hparams = utils.get_hparams(args.model, args.dataset)
     for key, value in hparams.items():
         print(key,':', value)
+
+    # load model (need to fulfil)
+    algorithm = getattr(algorithms, args.model)
+    
+    model = algorithm(datasets.input_shape, datasets.num_classes, hparams)
+    model.to(device)
+
     # load data
     root = args.root
     no_of_test_domains = args.test_domains
@@ -82,11 +89,6 @@ if __name__ == '__main__':
     
     print('already load the data')
 
-    # load model (need to fulfil)
-    algorithm = getattr(algorithms, args.model)
-    
-    model = algorithm(datasets.input_shape, datasets.num_classes, hparams)
-    model.to(device)
     
     # pretraining steps
     max_pretraining_steps = args.max_pretraining_steps
