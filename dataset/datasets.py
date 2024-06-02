@@ -73,7 +73,7 @@ class MultiDomianImageFolderDataset(MultiDomainDataset):
         self.num_classes = len(self.dataset[-1].classes)
 
 class PACSDataset(MultiDomianImageFolderDataset):
-    STEPS = 1500
+    STEPS = 15000
     CHECKPOINT_FREQ = 300
     DOMAINS = ['A', 'C', 'P', 'S']
     INPUT_SHAPE = (3, 224, 224)

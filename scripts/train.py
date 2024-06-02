@@ -27,7 +27,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', type=str, default='PACSDataset', help='dataset name')
     # parser.add_argument('--device', type=str, default='cuda', help='device to train on')
     parser.add_argument('--test_domains', type=list, default=[3], help='domains to test on')
-    parser.add_argument('--max_pretraining_steps', type=int, default=2000, help='maximum number of pretraining steps')
+    parser.add_argument('--max_pretraining_steps', type=int, default=20000, help='maximum number of pretraining steps')
     parser.add_argument('--chk_frq', type=int, default=None, help='checkpoint frequency')
     parser.add_argument('--holdout_fraction', type=float, default=0.1, help='fraction of the training data to hold out for validation')
     parser.add_argument('--pretraining_acc_threshold', type=float, default=0.9, help='pretraining accuracy threshold,\
@@ -122,7 +122,14 @@ if __name__ == '__main__':
                 print('Pretraining accuracy is higher than the threshold, begin aligning')
                 break
             
-        print('Epoch:', epoch, 'Loss:', loss_val, 'Total Accuracy:', current_total_accuracy)
+            #save the model
+            if hparams['resnet18']:            
+                resnet_size = 'r18'
+            else:
+                resnet_size = 'r50'
+
+            torch.save(model.state_dict(), 'model_{}_{}.pth'.format(args.model, resnet_size))
+            print('Epoch:', epoch, 'Loss:', loss_val, 'Total Accuracy:', current_total_accuracy)
 
     # train the model through an aligning way
             
