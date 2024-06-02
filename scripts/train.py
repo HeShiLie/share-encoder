@@ -49,11 +49,7 @@ if __name__ == '__main__':
     for key, value in hparams.items():
         print(key,':', value)
 
-    # load model (need to fulfil)
-    algorithm = getattr(algorithms, args.model)
-    
-    model = algorithm(datasets.input_shape, datasets.num_classes, hparams)
-    model.to(device)
+
 
     # load data
     root = args.root
@@ -62,6 +58,13 @@ if __name__ == '__main__':
     dataset_load = getattr(datasets, args.dataset)(root, no_of_test_domains, hparams)
     #   turn into dataloaders
     #       split the dataset into train and test
+
+    # load model (need to fulfil)
+    algorithm = getattr(algorithms, args.model)
+    
+    model = algorithm(datasets.input_shape, datasets.num_classes, hparams)
+    model.to(device)
+    
     train_split = []
     test_split = []
 
