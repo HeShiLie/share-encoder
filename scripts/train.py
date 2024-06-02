@@ -121,6 +121,7 @@ if __name__ == '__main__':
             if current_total_accuracy > args.pretraining_acc_threshold:
                 print('Pretraining accuracy is higher than the threshold, begin aligning')
                 break
+            
         print('Epoch:', epoch, 'Loss:', loss_val, 'Total Accuracy:', current_total_accuracy)
 
     # train the model through an aligning way
