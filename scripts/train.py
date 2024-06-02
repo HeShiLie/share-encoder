@@ -62,9 +62,9 @@ if __name__ == '__main__':
     # load model (need to fulfil)
     algorithm = getattr(algorithms, args.model)
     
-    model = algorithm(datasets.input_shape, datasets.num_classes, hparams)
+    model = algorithm(dataset_load.input_shape, dataset_load.num_classes, hparams)
     model.to(device)
-    
+
     train_split = []
     test_split = []
 
@@ -95,12 +95,12 @@ if __name__ == '__main__':
     
     # pretraining steps
     max_pretraining_steps = args.max_pretraining_steps
-    pre_steps = min(max_pretraining_steps,datasets.STEPS)
+    pre_steps = min(max_pretraining_steps,dataset_load.STEPS)
 
     current_total_accuracy = 0
 
     # form the iterators
-    checkpoint_freq = args.chk_frq or datasets.CHECKPOINT_FREQ
+    checkpoint_freq = args.chk_frq or dataset_load.CHECKPOINT_FREQ
     train_minibatches_iterator = zip(*train_loaders)
 
     # pretrain the model without regarding the domains, that is to trains the model on all the source domains
