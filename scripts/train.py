@@ -81,7 +81,7 @@ if __name__ == '__main__':
                                              1) 
                                              for i, train in enumerate(train_split) if i not in args.test_domains]
     eval_loaders = [FastDataLoader(test,
-                                      64,
+                                      32,
                                         1) 
                                         for test in (train_split+test_split)]
     
@@ -121,6 +121,7 @@ if __name__ == '__main__':
             if current_total_accuracy > args.pretraining_acc_threshold:
                 print('Pretraining accuracy is higher than the threshold, begin aligning')
                 break
+        print('Epoch:', epoch, 'Loss:', loss_val, 'Total Accuracy:', current_total_accuracy)
 
     # train the model through an aligning way
             

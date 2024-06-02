@@ -46,7 +46,7 @@ def accuracy(network, loader, weights, device):
 
     return correct / total
 
-def total_acc(model, eval_loaders, test_domains):
+def total_acc(model, eval_loaders, test_domains, weights = None, device = 'cuda'):
     '''
     model: nn.Module
     eval_loaders: list of torch.utils.data.DataLoader
@@ -63,11 +63,11 @@ def total_acc(model, eval_loaders, test_domains):
 
     # calculate the total accuracy
     # calculate the number of samples in each loader
-    num_samples_list = [len(loader.dataset) for loader in eval_loaders_new]
+    num_samples_list = [len(loader) for loader in eval_loaders_new]
     # evaluate the model on each loader
     acc_list = []
     for loader in eval_loaders_new:
-        acc = accuracy(model, loader)
+        acc = accuracy(model, loader, weights, device)
         acc_list.append(acc)
 
     # calculate the total accuracy only on the test loaders(the latter half of the eval_loaders)
