@@ -78,11 +78,11 @@ if __name__ == '__main__':
     train_loaders = [InfiniteDataLoader(train,
                                          None,
                                            hparams['batch_size'],
-                                             4) 
+                                             1) 
                                              for i, train in enumerate(train_split) if i not in args.test_domains]
     eval_loaders = [FastDataLoader(test,
                                       64,
-                                        4) 
+                                        1) 
                                         for test in (train_split+test_split)]
     
     eval_loader_names = ['env{}_in'.format(i)
@@ -96,6 +96,7 @@ if __name__ == '__main__':
     # pretraining steps
     max_pretraining_steps = args.max_pretraining_steps
     pre_steps = min(max_pretraining_steps,dataset_load.STEPS)
+    print('pre_steps:', pre_steps)
 
     current_total_accuracy = 0
 

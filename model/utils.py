@@ -16,7 +16,7 @@ def get_hparams(model_name, dataset_name):
         }
     if dataset_name == 'PACSDataset':
         hparams['aug_transform'] = True
-        hparams['batch_size'] = 8
+        hparams['batch_size'] = 16
     
     return hparams
 
