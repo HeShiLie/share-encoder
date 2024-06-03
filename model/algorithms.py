@@ -43,13 +43,15 @@ class erm(nn.Module):
 
         mse_loss = F.mse_loss(torch.cat(all_feature_affined), torch.cat(all_feature))
 
-        loss = F.cross_entropy(self.forward(torch.cat(all_x)), torch.cat(all_y)) + hparams['lambda']*mse_loss
+        ce_loss = F.cross_entropy(self.forward(torch.cat(all_x)), torch.cat(all_y))
+
+        loss = hparams['lambda']*mse_loss + ce_loss
 
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
 
-        return {'loss': loss.item()}
+        return {'ce_loss': ce_loss.item(), 'mse_loss': mse_loss.item()}
 
 # aligning
 class shares_erm(erm):

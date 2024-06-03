@@ -199,7 +199,7 @@ if __name__ == '__main__':
                     resnet_size = 'r50'
 
                 torch.save(model.state_dict(), 'model_{}_{}_align.pth'.format(args.model, resnet_size))
-                print('steps:', epoch, 'Loss:', loss_val, 'Total Accuracy:', current_total_accuracy) 
+                print('steps:', epoch, 'ce_loss:', loss_val['ce_loss'],'mse_loss:', loss_val['mse_loss'], 'Total Accuracy:', current_total_accuracy) 
 
         
 
