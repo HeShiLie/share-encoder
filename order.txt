@@ -1,1 +1,5 @@
-python scripts\train.py --root F:\Datasets\Homework3-PACS
+python scripts\train.py --root F:\Datasets\Homework3-PACS 
+
+python scripts\train.py --root F:\Datasets\Homework3-PACS --checkpoint_file model_erm_r18_10200.pth
+
+python scripts\train.py --root F:\Datasets\Homework3-PACS --no-pretrains --checkpoint_file model_erm_r18_10200.pth

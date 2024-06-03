@@ -19,11 +19,31 @@ class erm(nn.Module):
     def forward(self, x):
         return self.network(x)
 
-    def update(self, minibatches, unlabeled=None):
+    def update(self, minibatches):
         all_x = torch.cat([x for x, y in minibatches])
         all_y = torch.cat([y for x, y in minibatches])
 
         loss = F.cross_entropy(self.forward(all_x), all_y)
+
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+
+        return {'loss': loss.item()}
+    
+    def get_feature(self, x):
+        return self.featurelizer(x)
+    
+    def update_align(self, minibatches, shift_list, scale_list, hparams):
+        all_x = [x for x, y in minibatches]
+        all_y = [y for x, y in minibatches]
+
+        all_feature = [self.get_feature(x) for x in all_x]
+        all_feature_affined = [(feature-shift)*scale for feature, shift, scale in zip(all_feature, shift_list, scale_list)]
+
+        mse_loss = F.mse_loss(torch.cat(all_feature_affined), torch.cat(all_feature))
+
+        loss = F.cross_entropy(self.forward(torch.cat(all_x)), torch.cat(all_y)) + hparams['lambda']*mse_loss
 
         self.optimizer.zero_grad()
         loss.backward()

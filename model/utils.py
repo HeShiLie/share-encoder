@@ -11,7 +11,7 @@ def get_hparams(model_name, dataset_name):
             'resnet18': True,
             'resnet_dropout': False,
             'lr': 1e-3,
-            'lambda': 0,
+            'lambda': 0.1,
             'aug_transform': False
         }
     if dataset_name == 'PACSDataset':
@@ -78,6 +78,50 @@ def total_acc(model, eval_loaders, test_domains, weights = None, device = 'cuda'
 
     return total_acc
 
+# defirm the function to get the mu and sigma from the domains
+def get_mu_sigma(model, source_loader, device):
+    '''
+    model: nn.Module
+    source_loader: torch.utils.data.DataLoader
+    '''
+    # calculate the mu and sigma
+    model.eval()
+    feature_list = []
+    total_num = 0
+    with torch.no_grad():
+        for x, y in source_loader:
+            batch_weights = torch.ones(len(x))
+            batch_weights = batch_weights.to(device)
+            x = x.to(device)
+            feature = model.featurelizer(x)
+            feature_list.append(feature)
+            total_num += batch_weights.sum().item()
+
+    feature_list = torch.cat(feature_list, dim=0)
+    mu = feature_list.mean(dim=0)
+    sigma2 = feature_list.var(dim=0)
+    model.train()
+
+    return mu, sigma2, total_num
+
+def get_common_mu_sigma(list_mu_sigma_num):
+    '''
+    list_mu_sigma_num: list of tuple, each tuple contains the mu, sigma and the number of samples in the domain
+
+    where mu and sigma are torch.Tensor of shape (n_features,)
+
+    '''
+    # total_N
+    total_N = sum([num for mu, sigma, num in list_mu_sigma_num])
+
+    # calculate the common mu and sigma
+    # common_mu (mu_0) = (N_1*mu_1 + N_2*mu_2 + ... + N_n*mu_n)/total_N
+    common_mu = sum([num*mu for mu, sigma, num in list_mu_sigma_num])/total_N
+
+    # common_sigma = [[(N_1-1)*sigma_1**2 + N_1(mu_0 - mu_1)**2] + [(N_2-1)*sigma_2**2 + N_2(mu_0 - mu_2)**2] + ... + [(N_n-1)*sigma_n**2 + N_n(mu_0 - mu_n)**2]]/(total_N-1)
+    common_sigma2 = sum([(num-1)*sigma**2 + num*(mu - common_mu)**2 for mu, sigma, num in list_mu_sigma_num])/(total_N-1)
+
+    return common_mu, common_sigma2
 
 
 
