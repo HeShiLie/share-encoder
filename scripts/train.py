@@ -6,6 +6,7 @@
 import _init_paths
 import os
 
+import time
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -51,6 +52,8 @@ if __name__ == '__main__':
     else:
         device = "cpu"
 
+    print('device:', device)
+
     # generate the hparams
     hparams = utils.get_hparams(args.model, args.dataset)
     for key, value in hparams.items():
@@ -80,19 +83,23 @@ if __name__ == '__main__':
     print('len of dataset_load:', len(dataset_load))
     for idx,domain in enumerate(dataset_load):
         domain_dataset = dataset_load[idx]
+        # print(1)
         train, test = split_dataset(domain_dataset, int(len(domain_dataset) * (1 - args.holdout_fraction)), seed=args.seed) 
+        # print(2)
         train_split.append(train)
         test_split.append(test)
+        # print(3)
     #       form the dataloaders
     train_loaders = [InfiniteDataLoader(train,
                                          None,
                                            hparams['batch_size'],
-                                             1) 
+                                             4) 
                                              for i, train in enumerate(train_split) if i not in args.test_domains]
     eval_loaders = [FastDataLoader(test,
                                       32,
-                                        1) 
+                                        4) 
                                         for test in (train_split+test_split)]
+    print(4)
     
     eval_loader_names = ['env{}_in'.format(i)
         for i in range(len(train_split))]
@@ -117,8 +124,11 @@ if __name__ == '__main__':
     if args.pretrains:
         for epoch in range(pre_steps):
             # load minibatches
+            # current_time = time.time()
+            # print('start time:')
             minibatches_device = [(x.to(device), y.to(device))
             for x,y in next(train_minibatches_iterator)]
+            # print(f'finish, time:{time.time()-current_time}')
 
             # update the model
             loss_val = model.update(minibatches_device)
@@ -147,11 +157,21 @@ if __name__ == '__main__':
     # 首先统计每个域的mu和sigma
     #  load 'share_{}' model,似乎不用，直接在原有的model上进行操作就行
     print('from now on begin aligning')
-    source_counting_loaders = [FastDataLoader(data, 32, 1) for i,data in enumerate(dataset_load) if i not in args.test_domains]
-    
+    # 他妈的由于服务器上下面这句会卡住，我们注释然后换一种
+    source_counting_loaders = [FastDataLoader(data,
+                                               32,
+                                                 4) for i,data in enumerate(dataset_load) if i not in args.test_domains]
+    # 暂时就用
+    # source_counting_loaders = eval_loaders
+    # another way to generate source_counting_loaders from eval_loaders
+    # source_counting_loaders = []
+    print('already load the source_counting_loaders')
+
     #no need to form a bigloader
     list_mu_sigma_num = []
 
+    # begin counting the mu and sigma
+    print('begin the first counting the mu and sigma')
     for idx, source_loader in enumerate(source_counting_loaders):
         source_mu, source_sigma, domain_data_num = utils.get_mu_sigma(model, source_loader, device)
         # print('source_mu_{}:'.format(idx), source_mu, 'source_sigma_{}:'.format(idx), source_sigma)  
@@ -183,7 +203,7 @@ if __name__ == '__main__':
                 # total_acc function needs to be fulfilled
                 current_total_accuracy = utils.total_acc(model, eval_loaders, args.test_domains)
 
-                list_mu_sigma_num = []
+                # list_mu_sigma_num = []
 
                 for idx, source_loader in enumerate(source_counting_loaders):
                     source_mu, source_sigma, domain_data_num = utils.get_mu_sigma(model, source_loader, device)
@@ -199,7 +219,7 @@ if __name__ == '__main__':
                     resnet_size = 'r50'
 
                 torch.save(model.state_dict(), 'model_{}_{}_align.pth'.format(args.model, resnet_size))
-                print('steps:', epoch, 'ce_loss:', loss_val['ce_loss'],'mse_loss:', loss_val['mse_loss'], 'Total Accuracy:', current_total_accuracy) 
+                print('steps:', epoch, 'ce_loss:', f'{loss_val['ce_loss']:.3f}','mse_loss:', f'{loss_val['mse_loss']:.3f}', 'Total Accuracy:', f'{current_total_accuracy:.3f}') 
 
         
 

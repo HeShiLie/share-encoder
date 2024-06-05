@@ -10,13 +10,13 @@ def get_hparams(model_name, dataset_name):
         hparams = {
             'resnet18': True,
             'resnet_dropout': False,
-            'lr': 1e-3,
-            'lambda': 0.1,
+            'lr': 1e-5,
+            'lambda': 1e-3,
             'aug_transform': False
         }
     if dataset_name == 'PACSDataset':
         hparams['aug_transform'] = True
-        hparams['batch_size'] = 32
+        hparams['batch_size'] = 64
     
     return hparams
 
