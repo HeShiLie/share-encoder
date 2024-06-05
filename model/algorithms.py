@@ -15,6 +15,8 @@ class erm(nn.Module):
         self.classifier = nn.Linear(self.featurelizer.n_outputs, num_classes)
         self.network = nn.Sequential(self.featurelizer, self.classifier)
         self.optimizer = torch.optim.Adam(self.network.parameters(), lr = self.hparams['lr'])
+        self.optimizer_classifier = torch.optim.Adam(self.classifier.parameters(), lr = self.hparams['lr'])
+        self.optimizer_featurelizer = torch.optim.Adam(self.featurelizer.parameters(), lr = self.hparams['lr'])
 
     def forward(self, x):
         return self.network(x)
@@ -41,15 +43,23 @@ class erm(nn.Module):
         all_feature = [self.get_feature(x) for x in all_x]
         all_feature_affined = [(feature-shift)*scale for feature, shift, scale in zip(all_feature, shift_list, scale_list)]
 
-        mse_loss = F.mse_loss(torch.cat(all_feature_affined), torch.cat(all_feature))
+        mse_loss = hparams['lambda']*F.mse_loss(torch.cat(all_feature_affined), torch.cat(all_feature))
 
         ce_loss = F.cross_entropy(self.forward(torch.cat(all_x)), torch.cat(all_y))
 
-        loss = hparams['lambda']*mse_loss + ce_loss
+        loss = mse_loss + ce_loss
 
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
+        self.optimizer_featurelizer.zero_grad()
+        self.optimizer_classifier.zero_grad()
+
+        ce_loss.backward(retain_graph=True)
+        self.optimizer_classifier.step()
+
+        mse_loss.backward()
+        self.optimizer_featurelizer.step()
+
+        # self.optimizer.zero_grad()
+        # self.optimizer_featurelizer.zero_grad()
 
         return {'ce_loss': ce_loss.item(), 'mse_loss': mse_loss.item()}
 

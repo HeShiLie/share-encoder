@@ -20,6 +20,7 @@ import model.utils as utils
 from dataset.loaders import InfiniteDataLoader, FastDataLoader, split_dataset
 
 if __name__ == '__main__':
+    torch.autograd.set_detect_anomaly(True)
 
     parser = argparse.ArgumentParser(description='Train a model.')
     parser.add_argument('--model', type=str, default='erm', help='model name')

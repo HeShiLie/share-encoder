@@ -1,0 +1,11 @@
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.egg-info/
+dist/
+build/
+*.pth
+**/*.pyc
+**/*.pth

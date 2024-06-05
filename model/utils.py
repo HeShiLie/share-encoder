@@ -11,7 +11,7 @@ def get_hparams(model_name, dataset_name):
             'resnet18': True,
             'resnet_dropout': False,
             'lr': 1e-3,
-            'lambda': 0.1,
+            'lambda': 1e-5,
             'aug_transform': False
         }
     if dataset_name == 'PACSDataset':
