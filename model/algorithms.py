@@ -63,49 +63,65 @@ class erm(nn.Module):
 
         return {'ce_loss': ce_loss.item(), 'mse_loss': mse_loss.item()}
 
-# aligning
-class shares_erm(erm):
+# aligning while frozening the resnet architecture
+class share_erm(nn.Module):
     def __init__(self, input_shape, num_classes, hparams):
-        super(shares_erm, self).__init__()
+        super(share_erm, self).__init__()
+        self.hparams = hparams
+        self.featurelizer = ResNet(input_shape, self.hparams)
+        self.middle_fc_layers = nn.Sequential(nn.Linear(self.featurelizer.n_outputs, self.featurelizer.n_outputs), 
+                                              nn.ReLU(), 
+                                              nn.Linear(self.featurelizer.n_outputs, self.featurelizer.n_outputs), 
+                                              nn.ReLU(),
+                                              nn.Linear(self.featurelizer.n_outputs, self.featurelizer.n_outputs),
+                                              nn.ReLU())
+        self.classifier = nn.Linear(self.featurelizer.n_outputs, num_classes)
+        self.network = nn.Sequential(self.featurelizer, self.middle_fc_layers,self.classifier)
+        self.optimizer = torch.optim.Adam(self.network.parameters(), lr = self.hparams['lr'])
+        self.optimizer_classifier = torch.optim.Adam(self.classifier.parameters(), lr = self.hparams['lr'])
+        self.optimizer_midlayers = torch.optim.Adam(self.middle_fc_layers.parameters(), lr = self.hparams['lr'])
 
-        self.final_bn = nn.BatchNorm1d(self.featurelizer.n_outputs)
-        self.optimizer = torch.optim.Adam(self.parameters(), lr = hparams['lr'])
-        
-    def train_forward(self, x, tempfile = 'tempfile.pth',device = 'cuda'):
-        feature = self.featurelizer(x)
-        y = self.classifier(feature)
-        # save feature to at the end of the tempfile
-
-        torch.save(torch.cat([torch.load(tempfile).to(device),feature],dim=1), tempfile)
-
-        return y
-    
-    def test_forward(self, x):
+    def forward(self, x):
         return self.network(x)
 
-    def forward(self, x, mode = 'train'):
-        if mode == 'train':
-            return self.train_forward(self, x)
-        elif mode == 'test':
-            return self.test_forward(self, x)
-        else:
-            raise ValueError('mode must be either train or test')
-
-    def update(self, minibatches, common_mu_sigma, specific_mu_sigma):
+    def update(self, minibatches):
         all_x = torch.cat([x for x, y in minibatches])
         all_y = torch.cat([y for x, y in minibatches])
 
-        feature = self.featurelizer(all_x)
-        revised_feature = (feature-specific_mu_sigma['mu']+common_mu_sigma['mu'])*common_mu_sigma['sigma']/specific_mu_sigma['sigma']
-
-        y_hat = self.classifier(feature)
-        mse_loss = F.mse_loss(revised_feature, feature)
-        classification_loss = F.cross_entropy(y_hat, all_y)
-        loss = self.hparams['lambda']*mse_loss + classification_loss
+        loss = F.cross_entropy(self.forward(all_x), all_y)
 
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
 
-        return {'loss': loss.item(), 'mse_loss': mse_loss.item(), 'classification_loss': classification_loss.item()}
-        
+        return {'loss': loss.item()}
+    
+    def get_feature_after_midlayers(self, x):
+        return self.middle_fc_layers(self.featurelizer(x))
+    
+    def update_align(self, minibatches, shift_list, scale_list, hparams):
+        all_x = [x for x, y in minibatches]
+        all_y = [y for x, y in minibatches]
+
+        all_feature = [self.get_feature_after_midlayers(x) for x in all_x]
+        all_feature_affined = [(feature-shift)*scale for feature, shift, scale in zip(all_feature, shift_list, scale_list)]
+
+        mse_loss = hparams['lambda']*F.mse_loss(torch.cat(all_feature_affined), torch.cat(all_feature))
+
+        ce_loss = F.cross_entropy(self.forward(torch.cat(all_x)), torch.cat(all_y))
+
+        # loss = mse_loss + ce_loss
+
+        self.middle_fc_layers.zero_grad()
+        self.optimizer_classifier.zero_grad()
+
+        ce_loss.backward(retain_graph=True)
+        self.optimizer_classifier.step()
+
+        mse_loss.backward()
+        self.middle_fc_layers.step()
+
+        # self.optimizer.zero_grad()
+        # self.optimizer_featurelizer.zero_grad()
+
+        return {'ce_loss': ce_loss.item(), 'mse_loss': mse_loss.item()}
